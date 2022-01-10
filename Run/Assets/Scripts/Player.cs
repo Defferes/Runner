@@ -1,49 +1,80 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class Player : MonoBehaviour
 {
-    [Header("References")]
-    public GameManager manager;
-    public Material normalMat;
-    public Material phasedMat;
+    [Header("References")] 
+    
     [Header("Gameplay")]
     public float bounds = 1f;
-    public float phaseCooldown = 2f;
-    Renderer mesh;
-    Collider collision;
-    bool canPhase = true;
-    void Start()
+
+    private CharacterController _characterController;
+    private float position = 0f,
+        jumpSpeed = 12f;
+    private Vector3 moveVec,gravity;
+    private bool isMove = false;
+    private Animator _animator;
+
+    private void Start()
     {
-        mesh = GetComponentInChildren<SkinnedMeshRenderer>();
-        collision = GetComponent<Collider>();
+        _animator = GetComponent<Animator>();
+        _characterController = GetComponent<CharacterController>();
+        moveVec = Vector3.zero;
+        gravity = Vector3.zero;
     }
-    void Update()
+
+    void FixedUpdate()
     {
-        Vector3 position = transform.position;
-        if (Input.GetKeyDown(KeyCode.A))
+        if (_characterController.isGrounded)
         {
-            position.x -= 1f;
+            gravity = Vector3.zero;
+            if (Input.GetAxisRaw("Vertical") > 0)
+            {
+                _animator.SetTrigger("IsJumping");
+                gravity.y = jumpSpeed;
+            }
+
+            if (Input.GetAxisRaw("Vertical") < 0)
+            {
+                StartCoroutine("DoRolling");
+            }
         }
-        if (Input.GetKeyDown(KeyCode.D))
+        else
         {
-            position.x += 1f;
+            gravity += Physics.gravity * Time.deltaTime * 3f;
+            if (_characterController.velocity.y < 0)
+            {
+                _animator.SetTrigger("IsFalling");
+            }
         }
-        if (Input.GetButtonDown("Jump") && canPhase)
+
+        moveVec += gravity;
+        moveVec *= Time.deltaTime;
+        _characterController.Move(moveVec);
+        float input = Input.GetAxis("Horizontal");
+        if (input != 0)
         {
-            canPhase = false;
-            mesh.material = phasedMat;
-            collision.enabled = false;
-            Invoke("PhaseIn", phaseCooldown);
+            if (!isMove)
+            {
+                isMove = true;
+                position += Mathf.Sign(input);
+                position = Mathf.Clamp(position, -bounds, bounds);
+            }
         }
-        position.x = Mathf.Clamp(position.x, -bounds, bounds);
-        transform.position = position;
+        else isMove = false;
+        
+        Vector3 newPos = transform.position;
+        newPos.x = Mathf.Lerp(newPos.x, position, 10f * Time.deltaTime);
+        transform.position = newPos;
+        
     }
-    void PhaseIn()
+
+    IEnumerator DoRolling()
     {
-        canPhase = true;
-        mesh.material = normalMat;
-        collision.enabled = true;
+        _animator.SetBool("IsRolling",true);
+        yield return new WaitForSeconds(1.5f);
+        _animator.SetBool("IsRolling", false);
     }
 }

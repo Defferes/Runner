@@ -1,55 +1,47 @@
 using System.Collections;
 using System.Collections.Generic;
+using UnityEditor;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class GameManager : MonoBehaviour
 {
-    public TextureScroller ground;
-    public float gameTime = 10;
-    float totalTimeElapsed = 0;
-    bool isGameOver = false;
+    public Text ScoreText,ExitText,RestartText,ContinueText, LoseText;
+    public Button ExitButton, RestartButton, ContinueButton;
+    private float UpdateDelta = 0;
+    
     void Update()
     {
-        if (isGameOver)
-            return;
-        totalTimeElapsed += Time.deltaTime;
-        gameTime -= Time.deltaTime;
-        if (gameTime <= 0)
-            isGameOver = true;
-    }
-    public void AdjustTime(float amount)
-    {
-        gameTime += amount;
-        if (amount < 0)
-            SlowWorldDown();
-    }
-    void SlowWorldDown()
-    {
-        CancelInvoke();
-        Time.timeScale = 0.5f;
-        Invoke("SpeedWorldUp", 1);
-    }
-    void SpeedWorldUp()
-    {
-        Time.timeScale = 1f;
-    }
-    void OnGUI()
-    {
-        if (!isGameOver)
+        UpdateDelta += Time.deltaTime;
+        if (UpdateDelta >= 1f)
         {
-            Rect boxRect = new Rect(Screen.width / 2-50, Screen.height - 100,
-            100, 50);
-            GUI.Box(boxRect, "Time Remaining");
-            Rect labelRect = new Rect(Screen.width / 2-10, Screen.height - 80,
-            20, 40);
-            GUI.Label(labelRect, ((int)gameTime).ToString());
-        } else {
-            Rect boxRect = new Rect(Screen.width / 2-60, Screen.height / 2-100, 120, 50);
-            GUI.Box(boxRect, "Game Over");
-            Rect labelRect = new Rect(Screen.width / 2-55, Screen.height / 2-80,
-            90, 40);
-            GUI.Label(labelRect, "Total Time: " +(int)totalTimeElapsed);
-            Time.timeScale = 0;
+            Data.Score++;
+            UpdateDelta = 0f;
         }
+        
+        ScoreText.text = "Score: " + Data.Score;
     }
+   
+    public void LoseGame()
+    {
+        ManagerMenu(true);
+        Time.timeScale = 0;
+    }
+
+    public void ManagerMenu(bool flag)
+    {
+        LoseText.enabled = flag;
+        ExitText.enabled = flag;
+        RestartText.enabled = flag;
+        ContinueText.enabled = flag;
+        ExitButton.image.enabled = flag;
+        RestartButton.image.enabled = flag;
+        ContinueButton.image.enabled = flag;
+        ExitButton.enabled = flag;
+        RestartButton.enabled = flag;
+        ContinueButton.enabled = flag;
+
+
+    }
+
 }
